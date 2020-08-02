@@ -45,6 +45,8 @@ pip install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pyto
 #### Annotations
 VisualCOMET Annotations can be downloaded [here](https://storage.googleapis.com/ai2-mosaic/public/visualcomet/visualcomet.zip), or running:
 ```
+mkdir data
+cd data
 wget https://storage.googleapis.com/ai2-mosaic/public/visualcomet/visualcomet.zip
 ```
 This contains three files with `train_annots.json`, `val_annots.json`, and `test_annots.json`. The test files do not have ground truth inferences and will be treated as a blind set. Here is an example annotation:
