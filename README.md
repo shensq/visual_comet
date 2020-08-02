@@ -87,6 +87,7 @@ Then, begin fine-tuning GPT2 on the inference sentences with the following comma
 python scripts/run_finetuning.py --data_dir /path/to/visualcomet_annotations/  --output_dir experiments/image_inference --max_seq_len 128 --per_gpu_train_batch_size 64 --overwrite_output_dir --num_train_epochs 3 --save_steps 10000 --learning_rate 5e-5 
 ```
 This will evaluate and save the model with every 10,000 training steps and in the end of training as well.
+Usually, it took me 1 day to finish training.
 
 You can optionally train on the event, place, and inference sentences as well. This is the Event Place (EP) loss in the paper.
 To enable this, you can just set the argument `--mode all`:
