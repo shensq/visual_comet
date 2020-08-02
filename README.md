@@ -60,7 +60,7 @@ This contains three files with `train_annots.json`, `val_annots.json`, and `test
 ```
 
 #### Images and Object Detections
-VisualCOMET is annotated with images in [Visual Commonsense Reasoning dataset](https://arxiv.org/abs/1811.10830) and their object detection bounding boxes and segmentations. The number tags used in VisualCOMET sentences are the same ones in VCR. To get their image and metadata with detections, follow the instruction in [VCR website](https://visualcommonsense.com/download/). After agreeing to their license, you only need to download the 'Images'. Unzip the zip file `vcr1imges.zip` and set `VCR_IMAGES_DIR=/path/to/vcr1images` to the unzipped folder in `config.py`:
+VisualCOMET is annotated with images in [Visual Commonsense Reasoning (VCR)](https://arxiv.org/abs/1811.10830) and their object detection bounding boxes and segmentations. The number tags used in VisualCOMET sentences are the same ones in VCR. To get their image and metadata with detections, follow the instruction in [VCR website](https://visualcommonsense.com/download/). After agreeing to their license, you only need to download the 'Images'. Unzip the zip file `vcr1imges.zip` and set `VCR_IMAGES_DIR=/path/to/vcr1images` to the unzipped folder in `config.py`:
 #### Visual Features
 This code uses pre-trained RseNet101 features as visual embeddings, which you can download [here](https://storage.googleapis.com/ai2-mosaic/public/visualcomet/features.zip):
 ```
