@@ -35,6 +35,10 @@ Then install the requirements. The following code was tested on Python3.6 and py
 ```
 pip install -r requirements.txt
 ```
+If you have CUDA10.1 and have some trouble with pytorch such as running too slow, consider running:
+```
+pip install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+```
 
 ## Downloading the Data
 
