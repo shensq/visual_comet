@@ -131,7 +131,15 @@ We also included the generations results in `val_sample_1_num_5_top_k_0_top_p_0.
 | Shared Model| 13.50  | 11.38  | 18.34|
 | Paper | 13.50  | 11.55  | 18.27|
 
-
+#### Bibtex
+```
+@InProceedings{park2020visualcomet,
+  author = {Park, Jae Sung and Bhagavatula, Chandra and Mottaghi, Roozbeh and Farhadi, Ali and Choi, Yejin},
+  title = {VisualCOMET: Reasoning about the Dynamic Context of a Still Image},
+  booktitle = {In Proceedings of the European Conference on Computer Vision (ECCV)},
+  year = {2020}
+}
+```
 
 ### TO DOs
 - Retrieval result with generative model (Acc@50 in paper)
