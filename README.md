@@ -73,7 +73,8 @@ This code uses pre-trained RseNet101 features as visual embeddings, which you ca
 wget https://storage.googleapis.com/ai2-mosaic/public/visualcomet/features.zip
 ```
 The features are extracted using the model `mask_rcnn_R_101_C4_3x.yaml` in [detectron2 repo](https://github.com/facebookresearch/detectron2).
-This contains pickle files with features for the image and objects detected in VCR. 
+You can see the code here under `demo/get_bbox_features_vcr.ipynb`. 
+Running this gives pickle files with features for the image and objects detected in VCR. 
 ```
 {
   "image_features" :  2048 dim numpy array
