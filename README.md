@@ -35,12 +35,18 @@ Then install the requirements. The following code was tested on Python3.6 and py
 ```
 pip install -r requirements.txt
 ```
+If you have CUDA10.1 and have some trouble with pytorch such as running too slow, consider running:
+```
+pip install torch==1.5.0+cu101 torchvision==0.6.0+cu101 -f https://download.pytorch.org/whl/torch_stable.html
+```
 
 ## Downloading the Data
 
 #### Annotations
 VisualCOMET Annotations can be downloaded [here](https://storage.googleapis.com/ai2-mosaic/public/visualcomet/visualcomet.zip), or running:
 ```
+mkdir data
+cd data
 wget https://storage.googleapis.com/ai2-mosaic/public/visualcomet/visualcomet.zip
 ```
 This contains three files with `train_annots.json`, `val_annots.json`, and `test_annots.json`. The test files do not have ground truth inferences and will be treated as a blind set. Here is an example annotation:
@@ -84,9 +90,10 @@ mkdir experiments
 ```
 Then, begin fine-tuning GPT2 on the inference sentences with the following command:
 ```
-python scripts/run_finetuning.py --data_dir /path/to/visualcomet_annotations/  --output_dir experiments/image_inference --max_seq_len 128 --per_gpu_train_batch_size 64 --overwrite_output_dir --num_train_epochs 3 --save_steps 10000 --learning_rate 5e-5 
+python scripts/run_finetuning.py --data_dir /path/to/visualcomet_annotations/  --output_dir experiments/image_inference --max_seq_len 128 --per_gpu_train_batch_size 64 --overwrite_output_dir --num_train_epochs 5 --save_steps 10000 --learning_rate 5e-5 
 ```
 This will evaluate and save the model with every 10,000 training steps and in the end of training as well.
+Usually, it took me 1 day to finish training.
 
 You can optionally train on the event, place, and inference sentences as well. This is the Event Place (EP) loss in the paper.
 To enable this, you can just set the argument `--mode all`:
@@ -124,7 +131,15 @@ We also included the generations results in `val_sample_1_num_5_top_k_0_top_p_0.
 | Shared Model| 13.50  | 11.38  | 18.34|
 | Paper | 13.50  | 11.55  | 18.27|
 
-
+#### Bibtex
+```
+@InProceedings{park2020visualcomet,
+  author = {Park, Jae Sung and Bhagavatula, Chandra and Mottaghi, Roozbeh and Farhadi, Ali and Choi, Yejin},
+  title = {VisualCOMET: Reasoning about the Dynamic Context of a Still Image},
+  booktitle = {In Proceedings of the European Conference on Computer Vision (ECCV)},
+  year = {2020}
+}
+```
 
 ### TO DOs
 - Retrieval result with generative model (Acc@50 in paper)
