@@ -138,7 +138,7 @@ class VCGDataset:
                  cache_postfix=None,
                  include_image=False,
                  include_text=True,
-                 include_scene=False,
+                 include_scene=True,
                  mode='inference',
                  num_max_boxes=15,
                  only_use_relevant_dets=True,
@@ -210,7 +210,7 @@ class VCGDataset:
                     split_filename = '{}_annots.json'.format(split)
                 else:
                     split_filename = '{}_annots_with_scene.json'.format(split)  # load the json data with scene detection results
-                records[split] = read_and_parse_finetune_json(os.path.join(vcg_dir, split_filename), split) # This function is changed to read only 1/3 of the data
+                records[split] = read_and_parse_finetune_json(os.path.join(vcg_dir, split_filename), split, self.include_scene) # This function is changed to read only 1/3 of the data
 
                 idx = 0
                 num_ex = 5

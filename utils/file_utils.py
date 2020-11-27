@@ -79,7 +79,7 @@ def replace_names(sent, n2p):
     return sent
 
 
-def _encode_finetune_records(records):
+def _encode_finetune_records(records, include_scene):
     """Separate a sample into multiple samples with a single inference for a single relations
 
     """
@@ -101,6 +101,9 @@ def _encode_finetune_records(records):
                     info['inference_text_name'] = inference_name
                     info['person2name'] = map_idx
                     info['name2person'] = {v: k for k, v in map_idx.items()}
+
+
+
                     to_return.append(info)
     return to_return
 """Encode record in dict, into a ?
@@ -108,7 +111,7 @@ cares only about three relations, intent, before, after.
 
 """
 
-def read_and_parse_finetune_json(input_file: str, split: str):
+def read_and_parse_finetune_json(input_file: str, split: str, include_scene: bool=False):
     """Read from visual-comet annotations and encode into integers.
     Each record contains place, event, multiple intents, multiple before & after events.
     """
@@ -118,7 +121,7 @@ def read_and_parse_finetune_json(input_file: str, split: str):
             random.shuffle(records)
             # records = records[:len(records) // 3]
             records = records[:50]
-        records = _encode_finetune_records(records)
+        records = _encode_finetune_records(records, include_scene)
         return records
 
 
