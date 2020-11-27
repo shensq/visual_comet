@@ -163,6 +163,8 @@ class VCGDataset:
         self.max_event = None
         self.max_place = None
         self.max_inference = None
+        self.max_scene = None
+        self.max_attribute = None
 
         cache_name = 'cached_lm_max_seq_len_{}_mode_{}_include_text_{}'.format(max_seq_len, mode, str(include_text)).lower()
         if cache_postfix:
@@ -232,9 +234,17 @@ class VCGDataset:
                         )
                     # if the new text info appear in vcg_tokens, then it's good
                     tokens = [tokenizer.tokenize(" ".join(vt)) for vt in vcg_tokens]
-                    assert len(vcg_tokens) == 4 # TODO change
+                    if not self.include_scene:
+                        assert len(vcg_tokens) == 4
+                    else:
+                        assert  len(vcg_tokens) == 6
                     if split == 'train':
-                        e_l, p_l, r_l = [len(vt) for vt in tokens[1:]] #TODO change
+                        if not self.include_scene:
+                            e_l, p_l, r_l = [len(vt) for vt in tokens[1:]]
+                        else:
+                            s_l, a_l, e_l, p_l, r_l = [len(vt) for vt in tokens[1:]] #add scene & att length
+                            max_scene = max(max_scene, s_l)
+                            max_attribute = max(max_attribute, a_l)
                         max_event = max(max_event, e_l)
                         max_place = max(max_place, p_l)
                         max_inference = max(max_inference, r_l)
@@ -248,7 +258,8 @@ class VCGDataset:
                     self.max_event = max_event
                     self.max_place = max_place
                     self.max_inference = max_inference
-
+                    self.max_scene = max_scene # if not using the scene, it will be 0
+                    self.max_attribute = max_attribute
                 idx = 0
                 for tokens in tqdm(token_list):
                     padded_tokens = _combine_and_pad_tokens(tokenizer, tokens, max_image, max_event, max_place, max_inference, max_seq_len)
