@@ -221,6 +221,8 @@ class VCGDataset:
                 p = pickle.load(handle)
                 self.num_max_boxes = p['num_max_boxes']
                 self.max_image = p['max_image']
+                self.max_scene = p['max_scene']
+                self.max_attribute = p['max_attribute']
                 self.max_event = p['max_event']
                 self.max_place = p['max_place']
                 self.max_inference = p['max_inference']
@@ -320,6 +322,8 @@ class VCGDataset:
                     {
                         'num_max_boxes' : self.num_max_boxes,
                         'max_image' : self.max_image,
+                        'max_scene' : self.max_scene,
+                        'max_attribute' : self.max_attribute,
                         'max_event' : self.max_event,
                         'max_place' : self.max_place,
                         'max_inference' : self.max_inference,
