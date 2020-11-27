@@ -117,10 +117,10 @@ def read_and_parse_finetune_json(input_file: str, split: str, include_scene: boo
     """
     with open(input_file) as f:
         records = json.load(f)
-        if split in ['train', 'val']: # using only one third of data to train.
+        if split in ['train', ]: # using only one third of data to train.
             random.shuffle(records)
-            # records = records[:len(records) // 3]
-            records = records[:50]
+            records = records[:len(records) // 3]
+            # records = records[:50]
         records = _encode_finetune_records(records, include_scene)
         return records
 

@@ -257,7 +257,7 @@ class VCGDataset:
                         vcg_record_to_tokens(
                             tokenizer=tokenizer,
                             record=record,
-                            num_max_boxes=num_max_boxes, include_scene = self.include_scene
+                            num_max_boxes=num_max_boxes, include_scene=self.include_scene
                         )
                     # if the new text info appear in vcg_tokens, then it's good
                     tokens = [tokenizer.tokenize(" ".join(vt)) for vt in vcg_tokens]
