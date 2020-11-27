@@ -77,14 +77,21 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
 
 def vcg_record_to_tokens(tokenizer: VisualCometTokenizer,
                          record,
-                         num_max_boxes=15,
+                         num_max_boxes=15, include_scene=False
                          ):
     event = record['event_name']
     place = record['place']
     inference = record['inference_relation']
     inference_text = record['inference_text_name']
+
     # start with the vision part: start of image, 15 bounding box, end of image
     training_instance = [[tokenizer.begin_img] + [tokenizer.unk_token] * num_max_boxes + [tokenizer.end_img]]
+    if include_scene:
+        scene = record['scene']
+        attribute = record['attribute']
+        training_instance.append([tokenizer.begin_scene, scene, tokenizer.end_scene])  # scene added
+        training_instance.append([tokenizer.begin_attribute, attribute, tokenizer.end_attribute])  # attribute added
+
     training_instance.append([tokenizer.begin_event,event,tokenizer.end_event]) # event info
     training_instance.append([tokenizer.begin_place,place,tokenizer.end_place]) # place info
     training_instance.append([tokenizer.begin_inferences[inference], inference_text, tokenizer.end_inference])
@@ -221,7 +228,7 @@ class VCGDataset:
                         vcg_record_to_tokens(
                             tokenizer=tokenizer,
                             record=record,
-                            num_max_boxes=num_max_boxes,
+                            num_max_boxes=num_max_boxes, include_scene = self.include_scene
                         )
                     # if the new text info appear in vcg_tokens, then it's good
                     tokens = [tokenizer.tokenize(" ".join(vt)) for vt in vcg_tokens]
