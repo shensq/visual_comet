@@ -138,6 +138,7 @@ class VCGDataset:
                  cache_postfix=None,
                  include_image=False,
                  include_text=True,
+                 include_scene=False,
                  mode='inference',
                  num_max_boxes=15,
                  only_use_relevant_dets=True,
@@ -146,6 +147,7 @@ class VCGDataset:
         assert os.path.isdir(vcg_dir)
         self.include_image = include_image
         self.include_text = include_text
+        self.include_scene = include_scene
         self.only_use_relevant_dets = only_use_relevant_dets
 
         self.max_seq_len = max_seq_len
@@ -163,8 +165,12 @@ class VCGDataset:
         else:
             cached_features_files = os.path.join(cache_dir, cache_name)
 
+
         for split in ['train', 'val', 'test']:
-            split_filename = '{}_annots.json'.format(split)
+            if not self.include_scene:
+                split_filename = '{}_annots.json'.format(split)
+            else:
+                split_filename = '{}_annots_with_scene.json'.format(split) # load the json data with scene detection results
             assert os.path.exists(os.path.join(vcg_dir, split_filename))
 
         self.vcg_dataset = {}
@@ -173,7 +179,7 @@ class VCGDataset:
         records = {}
         splits = ['train', 'val']
 
-        if os.path.exists(cached_features_files) and not overwrite_cache:
+        if os.path.exists(cached_features_files) and not overwrite_cache: # TODO: change for adding scene
             print("Loading features from cached file %s", cached_features_files)
             with open(cached_features_files, 'rb') as handle:
                 p = pickle.load(handle)
@@ -191,14 +197,19 @@ class VCGDataset:
             max_event = 0 # 0 these are set dynamically
             max_place = 0 # 0
             max_inference = 0 # 0
+            max_scene = 0 # extra info for scene and attributes
+            max_attribute = 0
+
             for s, split in enumerate(splits): # parse train/val dataset consecutively
 
                 examples[split] = []
                 labels[split] = []
                 token_list = []
                 text_list = []
-
-                split_filename = '{}_annots.json'.format(split)
+                if not self.include_scene:
+                    split_filename = '{}_annots.json'.format(split)
+                else:
+                    split_filename = '{}_annots_with_scene.json'.format(split)  # load the json data with scene detection results
                 records[split] = read_and_parse_finetune_json(os.path.join(vcg_dir, split_filename), split) # This function is changed to read only 1/3 of the data
 
                 idx = 0
