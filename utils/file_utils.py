@@ -5,6 +5,7 @@ import random
 GENDER_NEUTRAL_NAMES = ['Casey', 'Riley', 'Jessie', 'Jackie', 'Avery', 'Jaime', 'Peyton', 'Kerry', 'Jody', 'Kendall',
                         'Peyton', 'Skyler', 'Frankie', 'Pat', 'Quinn']
 
+
 def write_items(items, output_file: str):
     with open(output_file, 'w') as f:
         for item in items:
@@ -25,6 +26,7 @@ def read_jsonl_lines(input_file: str):
         lines = f.readlines()
         return [json.loads(l.strip()) for l in lines]
 
+
 def _map_numbers_to_names(sent, map_idx=None):
     tokens = sent.replace(',', ' , ').replace("'", " '").replace('.', ' .').split()
     person_ids = set()
@@ -40,7 +42,7 @@ def _map_numbers_to_names(sent, map_idx=None):
         for i in range(len(person_ids)):
             if person_ids[i] not in map_idx:
                 map_idx[person_ids[i]] = chosen_names[j]
-                j+=1
+                j += 1
     else:
         map_idx = {}
         chosen_names = random.sample(GENDER_NEUTRAL_NAMES, len(person_ids))
@@ -48,12 +50,12 @@ def _map_numbers_to_names(sent, map_idx=None):
             map_idx[person_ids[i]] = chosen_names[i]
 
     tokens = [t if not t.isdigit() else map_idx[t] for t in tokens]
-    sent = ' '.join(tokens).strip().replace(' .','.')
+    sent = ' '.join(tokens).strip().replace(' .', '.')
     return map_idx, sent
 
 
 def _map_numbers_to_det_numbers(sent, map_idx=None):
-    tokens = sent.replace(',', ' , ').replace("'", " '").replace('.', ' .').replace('?',' ?').split()
+    tokens = sent.replace(',', ' , ').replace("'", " '").replace('.', ' .').replace('?', ' ?').split()
     person_ids = set()
     for t in tokens:
         if t.isdigit():
@@ -69,39 +71,56 @@ def _map_numbers_to_det_numbers(sent, map_idx=None):
     sent = ' '.join(tokens).strip().replace("'", " '").replace(' .', '.')
     return map_idx, sent
 
+
 def replace_names(sent, n2p):
     for name in n2p:
         sent = sent.replace(name, n2p[name])
-    sent = sent.replace('<|det','').replace('|>','')
+    sent = sent.replace('<|det', '').replace('|>', '')
     return sent
 
+
 def _encode_finetune_records(records):
+    """Separate a sample into multiple samples with a single inference for a single relations
+
+    """
     to_return = []
     relations = ['intent', 'before', 'after']
     for idx, record in enumerate(records):
         for r in relations:
             if r in record:
-                for inference in record[r]:
-                    info = {k: record[k] for k in record if k not in relations}
-                    info['event_idx'] = idx
+                for inference in record[r]: # build a data sample for each inference of a certain relation type
+                    info = {k: record[k] for k in record if k not in relations} # keep everything in a record except intent, before, after
+                    info['event_idx'] = idx # the original sample idx
                     info['inference_relation'] = r
                     info['inference_text'] = inference
 
                     # replace person id token with special tokens used in tokenizer
                     map_idx, event_name = _map_numbers_to_det_numbers(info['event'])
-                    info['event_name'] = event_name
+                    info['event_name'] = event_name # change 9 into <|det9|>; 9 is the idx of a person in an image
                     map_idx, inference_name = _map_numbers_to_det_numbers(inference, map_idx)
                     info['inference_text_name'] = inference_name
                     info['person2name'] = map_idx
-                    info['name2person'] = {v: k for k,v in map_idx.items()}
+                    info['name2person'] = {v: k for k, v in map_idx.items()}
                     to_return.append(info)
     return to_return
+"""Encode record in dict, into a ?
+cares only about three relations, intent, before, after.
 
-def read_and_parse_finetune_json(input_file: str):
+"""
+
+def read_and_parse_finetune_json(input_file: str, split: str):
+    """Read from visual-comet annotations and encode into integers.
+    Each record contains place, event, multiple intents, multiple before & after events.
+    """
     with open(input_file) as f:
         records = json.load(f)
+        if split in ['train', 'val']: # using only one third of data to train.
+            random.shuffle(records)
+            # records = records[:len(records) // 3]
+            records = records[:50]
         records = _encode_finetune_records(records)
         return records
+
 
 def _encode_generation_records(records):
     to_return = []
@@ -129,6 +148,7 @@ def _encode_generation_records(records):
             to_return.append(info)
 
     return to_return
+
 
 def read_and_parse_generation_json(input_file: str):
     with open(input_file) as f:

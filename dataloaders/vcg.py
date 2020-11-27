@@ -44,7 +44,7 @@ def _pad_ids(ids, max_len):
 
 def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
                             max_image, max_event, max_place, max_inference, max_seq_len):
-    """
+    """ pad everything into the maximum length
     :param tokenizer: tokenizer for the model
     :param tokens: [[image_tokens], [event_tokens], [place_tokens], [inference_tokens] ]
     :param max_seq_len: maximum sequence for concatenated tokens
@@ -53,9 +53,9 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
     new_tokens = []
     max_lens = [max_image, max_event, max_place, max_inference]
     assert len(tokens) == len(max_lens)
-    for i, t in enumerate(tokens):
+    for i, t in enumerate(tokens): # pad for each segment
         max_len = max_lens[i]
-        if len(t) > max_len:
+        if len(t) > max_len: # truncated to the max length-1, add an extra end token accordingly
             if i < 3:
                 if i == 0:
                     end_token = tokenizer.end_img
@@ -66,12 +66,12 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
                 t = t[:max_len - 1] + [end_token]
         else:
             t.extend([tokenizer.unk_token] * (max_len - len(t)))
-        new_tokens.extend(t)
+        new_tokens.extend(t) # concat tokens
 
     if len(new_tokens) > max_seq_len:
         new_tokens = new_tokens[:max_seq_len - 1] + [tokenizer.end_inference]
     else:
-        new_tokens.extend([tokenizer.unk_token] * (max_seq_len - len(new_tokens)))
+        new_tokens.extend([tokenizer.unk_token] * (max_seq_len - len(new_tokens))) # pad to max sequence length
 
     return new_tokens
 
@@ -83,30 +83,31 @@ def vcg_record_to_tokens(tokenizer: VisualCometTokenizer,
     place = record['place']
     inference = record['inference_relation']
     inference_text = record['inference_text_name']
-
+    # start with the vision part: start of image, 15 bounding box, end of image
     training_instance = [[tokenizer.begin_img] + [tokenizer.unk_token] * num_max_boxes + [tokenizer.end_img]]
-    training_instance.append([tokenizer.begin_event,event,tokenizer.end_event])
-    training_instance.append([tokenizer.begin_place,place,tokenizer.end_place])
+    training_instance.append([tokenizer.begin_event,event,tokenizer.end_event]) # event info
+    training_instance.append([tokenizer.begin_place,place,tokenizer.end_place]) # place info
     training_instance.append([tokenizer.begin_inferences[inference], inference_text, tokenizer.end_inference])
 
     return training_instance
-
+"""Add special tokens to wrap up visual info, event, and place. Still in text
+"""
 def _create_partial_labels(tokenizer: VisualCometTokenizer, tokenized_text, mode):
     try:
         labels = [-1] * len(tokenized_text)
 
         # create lm labels for inference sentences
-        possible_inferences = [tokenizer.convert_tokens_to_ids([br])[0] for br in tokenizer.begin_inferences.values()]
+        possible_inferences = [tokenizer.convert_tokens_to_ids([br])[0] for br in tokenizer.begin_inferences.values()] # get the id for start of possible inference
         begin_inference = [r for r in possible_inferences if r in tokenized_text]
         assert len(begin_inference) == 1
         inference_start_token = begin_inference[0]
-        start_idx = tokenized_text.index(inference_start_token)
+        start_idx = tokenized_text.index(inference_start_token) # find the start of inference
         inference_end_token = tokenizer.convert_tokens_to_ids([tokenizer.end_inference])[0]
         end_idx = tokenized_text.index(inference_end_token)
-        labels[start_idx + 1: end_idx + 1] = tokenized_text[start_idx + 1:end_idx + 1]
+        labels[start_idx + 1: end_idx + 1] = tokenized_text[start_idx + 1:end_idx + 1] # replace with the actual text of inference
 
         # create lm labels for event and place as well
-        if mode == 'all':
+        if mode == 'all': # also calculate loss for event and place
             event_start_token = tokenizer.convert_tokens_to_ids([tokenizer.begin_event])[0]
             start_idx = tokenized_text.index(event_start_token)
             event_end_token = tokenizer.convert_tokens_to_ids([tokenizer.end_event])[0]
@@ -125,6 +126,9 @@ def _create_partial_labels(tokenizer: VisualCometTokenizer, tokenized_text, mode
         raise Exception("Failed to tokenize: {}".format(tokenized_text))
 
 class VCGDataset:
+    """ Store all the setup parameters and the actual dataset.
+    The member vcg_dataset is a dict storing the train/val/test dataset(a pytorch sense dataset with getitem & len)
+    """
     def __init__(self,
                  tokenizer,
                  file_path,
@@ -179,16 +183,15 @@ class VCGDataset:
                 self.max_place = p['max_place']
                 self.max_inference = p['max_inference']
                 for split in splits:
-                    examples[split], labels[split], records[split] = p['data'][split]
+                    examples[split], labels[split], records[split] = p['data'][split] # data here is already parsed
         else:
             print("Creating features from dataset file at {} with cache file name: {}".format(vcg_dir, cached_features_files))
 
-            max_image = self.num_max_boxes + 2
-            max_event = 0
-            max_place = 0
-            max_inference = 0
-
-            for s, split in enumerate(splits):
+            max_image = self.num_max_boxes + 2 # the max number of image bounding box features 15+2
+            max_event = 0 # 0 these are set dynamically
+            max_place = 0 # 0
+            max_inference = 0 # 0
+            for s, split in enumerate(splits): # parse train/val dataset consecutively
 
                 examples[split] = []
                 labels[split] = []
@@ -196,30 +199,30 @@ class VCGDataset:
                 text_list = []
 
                 split_filename = '{}_annots.json'.format(split)
-                records[split] = read_and_parse_finetune_json(os.path.join(vcg_dir, split_filename))
+                records[split] = read_and_parse_finetune_json(os.path.join(vcg_dir, split_filename), split) # This function is changed to read only 1/3 of the data
 
                 idx = 0
                 num_ex = 5
 
                 print(split, len(records[split]))
-                for record in tqdm(records[split], "Encoding Data"):
+                for record in tqdm(records[split][:], "Encoding Data"):
                     vcg_tokens = \
                         vcg_record_to_tokens(
                             tokenizer=tokenizer,
                             record=record,
                             num_max_boxes=num_max_boxes,
                         )
-
+                    # if the new text info appear in vcg_tokens, then it's good
                     tokens = [tokenizer.tokenize(" ".join(vt)) for vt in vcg_tokens]
-                    assert len(vcg_tokens) == 4
+                    assert len(vcg_tokens) == 4 # TODO change
                     if split == 'train':
-                        e_l, p_l, r_l = [len(vt) for vt in tokens[1:]]
+                        e_l, p_l, r_l = [len(vt) for vt in tokens[1:]] #TODO change
                         max_event = max(max_event, e_l)
                         max_place = max(max_place, p_l)
                         max_inference = max(max_inference, r_l)
-                    token_list.append(tokens)
-                    text_list.append(vcg_tokens)
-                    idx+=1
+                    token_list.append(tokens)  # event, place, relations; all tokenized
+                    text_list.append(vcg_tokens) # text info with special tokens
+                    idx += 1
 
                 if split == 'train':
                     print('max_image, max_event, max_place, max_inference:', max_image, max_event, max_place, max_inference)
@@ -231,12 +234,12 @@ class VCGDataset:
                 idx = 0
                 for tokens in tqdm(token_list):
                     padded_tokens = _combine_and_pad_tokens(tokenizer, tokens, max_image, max_event, max_place, max_inference, max_seq_len)
-                    tokenized_text = tokenizer.convert_tokens_to_ids(padded_tokens)
+                    tokenized_text = tokenizer.convert_tokens_to_ids(padded_tokens) # convert special tokens and word-piece into integer
                     if not include_text: # mask out events and place text
                         inference_start_token_idx = tokenizer.convert_tokens_to_ids([tokenizer.begin_event])[0]
                         start_idx = tokenized_text.index(inference_start_token_idx)
                         inference_end_token_idx = tokenizer.convert_tokens_to_ids([tokenizer.end_place])[0]
-                        end_idx = tokenized_text.index(inference_end_token_idx)
+                        end_idx = tokenized_text.index(inference_end_token_idx) # find out the start and end of the text span
 
                         assert end_idx > start_idx
                         unk_id = tokenizer.convert_tokens_to_ids([tokenizer.unk_token])[0]
@@ -246,7 +249,7 @@ class VCGDataset:
                     lm_labels = _create_partial_labels(tokenizer, tokenized_text, mode)
                     labels[split].append(lm_labels)
 
-                    if idx < num_ex:
+                    if idx < num_ex: # print out some examples
                         print("***** Example Instance for Split: {} *****".format(split))
                         print("Text: {}".format(text_list[idx]))
                         print("Tokenized Text: {}".format(tokenized_text))
@@ -298,8 +301,7 @@ def _to_boxes_and_masks(features, boxes, obj_labels, segments, num_max_boxes):
 class VCGLoader:
     def __init__(self, examples, labels, records, split, tokenizer,
                  include_image=True, num_max_boxes=15, only_use_relevant_dets=True, add_image_as_a_box=True):
-        """
-
+        """ This is the actual dataset in pytorch's definition. Using the parsed data in self.examples
         :param split: train, val, or test
         :param mode: inference or event
         :param only_use_relevant_dets: True, if we will only use the detections mentioned in the event and inference.

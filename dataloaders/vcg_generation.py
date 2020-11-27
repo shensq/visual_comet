@@ -43,7 +43,7 @@ def _pad_ids(ids, max_len):
     else:
         return ids + [0] * (max_len - len(ids))
 
-def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
+def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens, # the same as the original one
                             max_image, max_event, max_place, max_inference, max_seq_len):
     """
     :param tokenizer: tokenizer for the model
@@ -76,7 +76,7 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
 
     return new_tokens
 
-def vcg_record_to_tokens(tokenizer: VisualCometTokenizer,
+def vcg_record_to_tokens(tokenizer: VisualCometTokenizer, # no inference is added to
                          record,
                          num_max_boxes=15,
                          ):

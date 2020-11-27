@@ -486,7 +486,7 @@ def main():
     config.use_subject_ids = args.use_subject_ids
     config.use_bbox = args.use_bbox
     print(config)
-
+    # TODO: read code in detail
     model = model_class.from_pretrained(args.model_name_or_path,
                                         from_tf=bool('.ckpt' in args.model_name_or_path),
                                         config=config)
@@ -556,7 +556,7 @@ def main():
             )
             result = dict(('{}_{}'.format(k, eval_postfix), v) for k, v in result.items())
             results.update(result)
-
+    print(results)
     return results
 
 
