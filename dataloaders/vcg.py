@@ -128,8 +128,8 @@ def _create_partial_labels(tokenizer: VisualCometTokenizer, tokenized_text, mode
         end_idx = tokenized_text.index(inference_end_token)
         labels[start_idx + 1: end_idx + 1] = tokenized_text[start_idx + 1:end_idx + 1] # replace with the actual text of inference
 
-        # create lm labels for event and place as well
-        if mode == 'all': # also calculate loss for event and place
+        # create lm labels for event and place as well; it's inference mode in default (don't need to predict event& place)
+        if mode == 'predict_event_place' or mode == 'all': # also calculate loss for event and place
             event_start_token = tokenizer.convert_tokens_to_ids([tokenizer.begin_event])[0]
             start_idx = tokenized_text.index(event_start_token)
             event_end_token = tokenizer.convert_tokens_to_ids([tokenizer.end_event])[0]
@@ -140,6 +140,18 @@ def _create_partial_labels(tokenizer: VisualCometTokenizer, tokenized_text, mode
             start_idx = tokenized_text.index(event_start_token)
             event_end_token = tokenizer.convert_tokens_to_ids([tokenizer.end_place])[0]
             end_idx = tokenized_text.index(event_end_token)
+            labels[start_idx + 1: end_idx + 1] = tokenized_text[start_idx + 1:end_idx + 1]
+        if mode == 'predict_scene_attribute' or mode == 'all': # also calculate loss for scene & attributes
+            scene_start_token = tokenizer.convert_tokens_to_ids([tokenizer.begin_scene])[0]
+            start_idx = tokenized_text.index(scene_start_token)
+            scene_end_token = tokenizer.convert_tokens_to_ids([tokenizer.end_scene])[0]
+            end_idx = tokenized_text.index(scene_end_token)
+            labels[start_idx + 1: end_idx + 1] = tokenized_text[start_idx + 1:end_idx + 1]
+
+            att_start_token = tokenizer.convert_tokens_to_ids([tokenizer.begin_attribute])[0]
+            start_idx = tokenized_text.index(att_start_token)
+            att_end_token = tokenizer.convert_tokens_to_ids([tokenizer.end_attribute])[0]
+            end_idx = tokenized_text.index(att_end_token)
             labels[start_idx + 1: end_idx + 1] = tokenized_text[start_idx + 1:end_idx + 1]
 
         assert len(tokenized_text) == len(labels)
