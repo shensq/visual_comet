@@ -56,6 +56,7 @@ def load_and_cache_vcg_examples(args, tokenizer):
         max_seq_len=args.max_seq_len,
         include_image=args.include_image,
         include_text=args.include_text,
+        include_scene=args.include_scene,
         mode=args.mode,
         only_use_relevant_dets=not args.use_all_dets,
         cache_dir=args.cache_dir,
@@ -332,6 +333,8 @@ def main():
                         help="Do not use image context to train the inference sentences.")
     parser.add_argument("--no_text", dest='include_text', action='store_false',
                         help="Do not use text event and place to train the inference sentences.")
+    parser.add_argument("--no_scene", dest='include_scene', action='store_false',
+                        help="Do not use scene and attributes info to train the inference sentences.")
     parser.add_argument('--no_person_ids', dest='use_person_ids', action='store_false',
                         help="Use person id embeddings in visual features.")
     parser.add_argument('--no_subject_ids', dest='use_subject_ids', action='store_false',
