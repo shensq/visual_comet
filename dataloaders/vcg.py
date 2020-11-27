@@ -43,7 +43,7 @@ def _pad_ids(ids, max_len):
         return ids + [0] * (max_len - len(ids))
 
 def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
-                            max_image, max_event, max_place, max_inference, max_seq_len):
+                            max_image, max_scene, max_attribute, max_event, max_place, max_inference, max_seq_len, include_scene):
     """ pad everything into the maximum length
     :param tokenizer: tokenizer for the model
     :param tokens: [[image_tokens], [event_tokens], [place_tokens], [inference_tokens] ]
@@ -51,17 +51,32 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens,
     :return: Padded tokens to max length for each set (image, event, place, inference) and concatenated version of the set
     """
     new_tokens = []
-    max_lens = [max_image, max_event, max_place, max_inference]
-    assert len(tokens) == len(max_lens)
+    max_lens = [max_image, max_scene, max_attribute, max_event, max_place, max_inference]
+    if not include_scene:
+        assert len(tokens) == len(max_lens)-2 # don't have scene and att
+    else:
+        assert len(tokens) == len(max_lens)
     for i, t in enumerate(tokens): # pad for each segment
         max_len = max_lens[i]
         if len(t) > max_len: # truncated to the max length-1, add an extra end token accordingly
-            if i < 3:
+            if not include_scene and i < 3:
                 if i == 0:
                     end_token = tokenizer.end_img
                 elif i == 1:
                     end_token = tokenizer.end_event
                 elif i == 2:
+                    end_token = tokenizer.end_place
+                t = t[:max_len - 1] + [end_token]
+            elif include_scene and i<5:
+                if i == 0:
+                    end_token = tokenizer.end_img
+                elif i == 1:
+                    end_token = tokenizer.end_scene
+                elif i == 2:
+                    end_token = tokenizer.end_attribute
+                elif i == 3:
+                    end_token = tokenizer.end_event
+                elif i == 4:
                     end_token = tokenizer.end_place
                 t = t[:max_len - 1] + [end_token]
         else:
@@ -262,9 +277,9 @@ class VCGDataset:
                     self.max_attribute = max_attribute
                 idx = 0
                 for tokens in tqdm(token_list):
-                    padded_tokens = _combine_and_pad_tokens(tokenizer, tokens, max_image, max_event, max_place, max_inference, max_seq_len)
+                    padded_tokens = _combine_and_pad_tokens(tokenizer, tokens, max_image, max_scene, max_attribute, max_event, max_place, max_inference, max_seq_len, self.include_scene)
                     tokenized_text = tokenizer.convert_tokens_to_ids(padded_tokens) # convert special tokens and word-piece into integer
-                    if not include_text: # mask out events and place text
+                    if not include_text: # mask out events and place text TODO: what does this means?
                         inference_start_token_idx = tokenizer.convert_tokens_to_ids([tokenizer.begin_event])[0]
                         start_idx = tokenized_text.index(inference_start_token_idx)
                         inference_end_token_idx = tokenizer.convert_tokens_to_ids([tokenizer.end_place])[0]
