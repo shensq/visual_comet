@@ -274,11 +274,11 @@ def evaluate(args, model, tokenizer,
 
     output_eval_file = os.path.join(eval_output_dir, "metrics.json")
 
-    if os.path.exists(output_eval_file):
-        results = json.load(open(output_eval_file))
-    else:
-        results = {}
-
+    # if os.path.exists(output_eval_file):
+    #     results = json.load(open(output_eval_file))
+    # else:
+    #     results = {}
+    results = {}
     if len(postfix) == 0:
         results.update({
             "perplexity": perplexity.item(),
@@ -530,7 +530,6 @@ def main():
             model_to_save.save_pretrained(args.output_dir)
             tokenizer.save_pretrained(args.output_dir)
 
-        torch.distributed.barrier()
         # Load a trained model and vocabulary that you have fine-tuned
         model = model_class.from_pretrained(args.output_dir)
         tokenizer = tokenizer_class.from_pretrained(args.output_dir,
@@ -560,9 +559,9 @@ def main():
                 dataset,
                 postfix=eval_postfix
             )
-            result = dict(('{}_{}'.format(k, eval_postfix), v) for k, v in result.items())
+            result = dict(('{}_{}'.format(k, ''), v) for k, v in result.items())
             results.update(result)
-    print(results)
+            print(results)
     return results
 
 
