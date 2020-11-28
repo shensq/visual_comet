@@ -464,6 +464,8 @@ def main():
     print(output_file)
 
     # Get Dataset Loader
+    config.max_scene = 16
+    config.max_attribute = 12 # TODO : remove these, when a new model is available. statics for 1/3 training data
     dataset = load_and_cache_vcg_examples(args, config, tokenizer)
     eval_dataset = dataset.get_dataset(args.split)
     all_records = eval_dataset.records
