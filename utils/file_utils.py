@@ -156,5 +156,6 @@ def _encode_generation_records(records, include_scene):
 def read_and_parse_generation_json(input_file: str, include_scene: bool):
     with open(input_file) as f:
         records = json.load(f)
+        records = records[:len(records) // 3]
         records = _encode_generation_records(records, include_scene)
         return records
