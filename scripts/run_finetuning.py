@@ -520,16 +520,17 @@ def main():
         # Begin actual training
         global_step, tr_loss = train(args, dataset, model, tokenizer)
         logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
+        if args.local_rank in [-1, 0]:
+            # Saving best-practices in the end: if you use save_pretrained for the model and tokenizer, you can reload them using from_pretrained()
+            logger.info("Saving model checkpoint to %s", args.output_dir)
+            # Save a trained model in the end, configuration and tokenizer using `save_pretrained()`.
+            # They can then be reloaded using `from_pretrained()`
+            model_to_save = model.module if hasattr(model,
+                                                    'module') else model  # Take care of distributed/parallel training
+            model_to_save.save_pretrained(args.output_dir)
+            tokenizer.save_pretrained(args.output_dir)
 
-        # Saving best-practices in the end: if you use save_pretrained for the model and tokenizer, you can reload them using from_pretrained()
-        logger.info("Saving model checkpoint to %s", args.output_dir)
-        # Save a trained model in the end, configuration and tokenizer using `save_pretrained()`.
-        # They can then be reloaded using `from_pretrained()`
-        model_to_save = model.module if hasattr(model,
-                                                'module') else model  # Take care of distributed/parallel training
-        model_to_save.save_pretrained(args.output_dir)
-        tokenizer.save_pretrained(args.output_dir)
-
+        torch.distributed.barrier()
         # Load a trained model and vocabulary that you have fine-tuned
         model = model_class.from_pretrained(args.output_dir)
         tokenizer = tokenizer_class.from_pretrained(args.output_dir,
