@@ -484,6 +484,8 @@ def main():
     # set up model
     config.max_event = dataset.max_event
     config.max_place = dataset.max_place
+    config.max_scene = dataset.max_scene
+    config.max_attribute = dataset.max_attribute
     config.max_inference = dataset.max_inference
     config.use_person_ids = args.use_person_ids
     config.use_subject_ids = args.use_subject_ids

@@ -266,7 +266,7 @@ class VCGDataset:
                     if not self.include_scene:
                         assert len(vcg_tokens) == 4
                     else:
-                        assert  len(vcg_tokens) == 6
+                        assert len(vcg_tokens) == 6
                     if split == 'train':
                         if not self.include_scene:
                             e_l, p_l, r_l = [len(vt) for vt in tokens[1:]]

@@ -125,7 +125,7 @@ def read_and_parse_finetune_json(input_file: str, split: str, include_scene: boo
         return records
 
 
-def _encode_generation_records(records):
+def _encode_generation_records(records, include_scene):
     to_return = []
     relations = ['intent', 'before', 'after']
     for idx, record in enumerate(records):
@@ -153,8 +153,8 @@ def _encode_generation_records(records):
     return to_return
 
 
-def read_and_parse_generation_json(input_file: str):
+def read_and_parse_generation_json(input_file: str, include_scene: bool):
     with open(input_file) as f:
         records = json.load(f)
-        records = _encode_generation_records(records)
+        records = _encode_generation_records(records, include_scene)
         return records

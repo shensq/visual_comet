@@ -56,6 +56,8 @@ def load_and_cache_vcg_examples(args, config, tokenizer):
         file_path=args.data_dir,
         tokenizer=tokenizer,
         max_seq_len=args.max_seq_len,
+        max_scene=config.max_scene,
+        max_attribute=config.max_attribute,
         max_event=config.max_event,
         max_place=config.max_place,
         max_inference=config.max_inference,

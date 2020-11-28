@@ -44,7 +44,7 @@ def _pad_ids(ids, max_len):
         return ids + [0] * (max_len - len(ids))
 
 def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens, # the same as the original one
-                            max_image, max_event, max_place, max_inference, max_seq_len):
+                            max_image, max_scene, max_attribute, max_event, max_place, max_inference, max_seq_len, include_scene):
     """
     :param tokenizer: tokenizer for the model
     :param tokens: [[image_tokens], [event_tokens], [place_tokens], [inference_tokens] ]
@@ -52,17 +52,32 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens, # the same 
     :return: Padded tokens to max length for each set (image, event, place, inference) and concatenated version of the set
     """
     new_tokens = []
-    max_lens = [max_image, max_event, max_place, max_inference]
-    assert len(tokens) == len(max_lens)
+    max_lens = [max_image, max_scene, max_attribute, max_event, max_place, max_inference]
+    if not include_scene:
+        assert len(tokens) == len(max_lens) - 2  # don't have scene and att
+    else:
+        assert len(tokens) == len(max_lens)
     for i, t in enumerate(tokens):
         max_len = max_lens[i]
         if len(t) > max_len:
-            if i < 3:
+            if not include_scene and i < 3:
                 if i == 0:
                     end_token = tokenizer.end_img
                 elif i == 1:
                     end_token = tokenizer.end_event
                 elif i == 2:
+                    end_token = tokenizer.end_place
+                t = t[:max_len - 1] + [end_token]
+            elif include_scene and i < 5:
+                if i == 0:
+                    end_token = tokenizer.end_img
+                elif i == 1:
+                    end_token = tokenizer.end_scene
+                elif i == 2:
+                    end_token = tokenizer.end_attribute
+                elif i == 3:
+                    end_token = tokenizer.end_event
+                elif i == 4:
                     end_token = tokenizer.end_place
                 t = t[:max_len - 1] + [end_token]
         else:
@@ -78,13 +93,19 @@ def _combine_and_pad_tokens(tokenizer: VisualCometTokenizer, tokens, # the same 
 
 def vcg_record_to_tokens(tokenizer: VisualCometTokenizer, # no inference is added to
                          record,
-                         num_max_boxes=15,
+                         num_max_boxes=15, include_scene=False
                          ):
     event = record['event_name']
     place = record['place']
     inference = record['inference_relation']
 
     generation_instance = [[tokenizer.begin_img] + [tokenizer.unk_token] * num_max_boxes + [tokenizer.end_img]]
+    if include_scene:
+        scene = record['scene']
+        attribute = record['attribute']
+        generation_instance.append([tokenizer.begin_scene, scene, tokenizer.end_scene])  # scene added
+        generation_instance.append([tokenizer.begin_attribute, attribute, tokenizer.end_attribute])  # attribute added
+
     generation_instance.append([tokenizer.begin_event,event,tokenizer.end_event])
     generation_instance.append([tokenizer.begin_place,place,tokenizer.end_place])
     generation_instance.append([tokenizer.begin_inferences[inference]])
@@ -104,6 +125,8 @@ class VCGGenDataset:
                  mode='inference',
                  num_max_boxes=15,
                  max_seq_len=256,
+                 max_scene=30,
+                 max_attribute=30,
                  max_event=39,
                  max_place=22,
                  max_inference=23,
@@ -122,8 +145,8 @@ class VCGGenDataset:
         self.max_place = max_place
         self.max_inference = max_inference
         self.max_seq_len = max_seq_len
-        self.max_scene = None
-        self.max_attribute = None
+        self.max_scene = max_scene
+        self.max_attribute = max_attribute
 
         cache_name = 'cached_lm_max_seq_len_{}_mode_{}_include_text_{}'.format(max_seq_len, mode, str(include_text)).lower()
         if cache_postfix:
@@ -171,7 +194,7 @@ class VCGGenDataset:
                     split_filename = '{}_annots.json'.format(split)
                 else:
                     split_filename = '{}_annots_with_scene.json'.format(split)
-                records[split] = read_and_parse_generation_json(os.path.join(vcg_dir, split_filename))
+                records[split] = read_and_parse_generation_json(os.path.join(vcg_dir, split_filename), self.include_scene)
 
                 idx = 0
                 num_ex = 5
@@ -182,14 +205,17 @@ class VCGGenDataset:
                         vcg_record_to_tokens(
                             tokenizer=tokenizer,
                             record=record,
-                            num_max_boxes=num_max_boxes,
+                            num_max_boxes=num_max_boxes, include_scene=self.include_scene
                         )
 
                     tokens = [tokenizer.tokenize(" ".join(vt)) for vt in vcg_tokens]
-                    assert len(vcg_tokens) == 4
+                    if not self.include_scene:
+                        assert len(vcg_tokens) == 4
+                    else:
+                        assert len(vcg_tokens) == 6
                     token_list.append(tokens)
 
-                    padded_tokens = _combine_and_pad_tokens(tokenizer, tokens, self.max_image, self.max_event, self.max_place, self.max_inference, self.max_seq_len)
+                    padded_tokens = _combine_and_pad_tokens(tokenizer, tokens, self.max_image, self.max_scene, self.max_attribute, self.max_event, self.max_place, self.max_inference, self.max_seq_len, self.include_scene)
                     tokenized_text = tokenizer.convert_tokens_to_ids(padded_tokens)
                     if not include_text: # mask out events and place text
                         inference_start_token_idx = tokenizer.convert_tokens_to_ids([tokenizer.begin_event])[0]
@@ -217,6 +243,8 @@ class VCGGenDataset:
                     {
                         'num_max_boxes' : self.num_max_boxes,
                         'max_image' : self.max_image,
+                        'max_scene' : self.max_scene,
+                        'max_attribute' : self.max_attribute,
                         'max_event' : self.max_event,
                         'max_place' : self.max_place,
                         'max_inference' : self.max_inference,
