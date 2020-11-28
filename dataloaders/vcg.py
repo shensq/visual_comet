@@ -215,7 +215,7 @@ class VCGDataset:
         records = {}
         splits = ['train', 'val']
 
-        if os.path.exists(cached_features_files) and not overwrite_cache: # TODO: change for adding scene
+        if os.path.exists(cached_features_files) and not overwrite_cache:
             print("Loading features from cached file %s", cached_features_files)
             with open(cached_features_files, 'rb') as handle:
                 p = pickle.load(handle)

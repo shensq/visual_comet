@@ -100,6 +100,7 @@ class VCGGenDataset:
                  cache_postfix=None,
                  include_image=False,
                  include_text=True,
+                 include_scene=True,
                  mode='inference',
                  num_max_boxes=15,
                  max_seq_len=256,
@@ -112,6 +113,7 @@ class VCGGenDataset:
         assert os.path.isdir(vcg_dir)
         self.include_image = include_image
         self.include_text = include_text
+        self.include_scene = include_scene
         self.only_use_relevant_dets = only_use_relevant_dets
 
         self.num_max_boxes = num_max_boxes
@@ -120,6 +122,8 @@ class VCGGenDataset:
         self.max_place = max_place
         self.max_inference = max_inference
         self.max_seq_len = max_seq_len
+        self.max_scene = None
+        self.max_attribute = None
 
         cache_name = 'cached_lm_max_seq_len_{}_mode_{}_include_text_{}'.format(max_seq_len, mode, str(include_text)).lower()
         if cache_postfix:
@@ -131,7 +135,10 @@ class VCGGenDataset:
             cached_features_files = os.path.join(cache_dir, cache_name)
 
         for split in ['train', 'val', 'test']:
-            split_filename = '{}_annots.json'.format(split)
+            if not self.include_scene:
+                split_filename = '{}_annots.json'.format(split)
+            else:
+                split_filename = '{}_annots_with_scene.json'.format(split)
             assert os.path.exists(os.path.join(vcg_dir, split_filename))
 
         self.vcg_dataset = {}
@@ -145,6 +152,8 @@ class VCGGenDataset:
                 p = pickle.load(handle)
                 self.num_max_boxes = p['num_max_boxes']
                 self.max_image = p['max_image']
+                self.max_scene = p['max_scene']
+                self.max_attribute = p['max_attribute']
                 self.max_event = p['max_event']
                 self.max_place = p['max_place']
                 self.max_inference = p['max_inference']
@@ -158,7 +167,10 @@ class VCGGenDataset:
                 examples[split] = []
                 token_list = []
 
-                split_filename = '{}_annots.json'.format(split)
+                if not self.include_scene:
+                    split_filename = '{}_annots.json'.format(split)
+                else:
+                    split_filename = '{}_annots_with_scene.json'.format(split)
                 records[split] = read_and_parse_generation_json(os.path.join(vcg_dir, split_filename))
 
                 idx = 0
