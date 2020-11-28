@@ -529,7 +529,8 @@ def main():
                                                     'module') else model  # Take care of distributed/parallel training
             model_to_save.save_pretrained(args.output_dir)
             tokenizer.save_pretrained(args.output_dir)
-
+        if args.local_rank not in [-1, 0]:
+            torch.distributed.barrier()  
         # Load a trained model and vocabulary that you have fine-tuned
         model = model_class.from_pretrained(args.output_dir)
         tokenizer = tokenizer_class.from_pretrained(args.output_dir,
